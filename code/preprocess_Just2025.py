@@ -8,7 +8,7 @@
 Code to preprocess speech transcripts for subsequent NLP analysis, as in Just et al., 2025:
 DOI to follow.
 Please cite the paper above if you use this code for your own work.
-Author: Dr Sandra A Just 25/05/2025
+Authors Galina Ryazanskaya and Sandra Just 25/05/2025
 """
 
 import re
