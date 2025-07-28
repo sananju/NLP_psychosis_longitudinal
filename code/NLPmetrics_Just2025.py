@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
 """
 Code to compute different NLP metrics, as in Just et al., 2025:
 DOI to follow.
@@ -18,6 +12,7 @@ import re
 import networkx as nx
 
 from typing import List
+from wordfreq import word_frequency
 from transformers import AutoTokenizer, AutoModel, BertTokenizer, BertForNextSentencePrediction
 
 #Load German spacy model
@@ -87,6 +82,36 @@ def moving_LCC(words: List[str], window_size: int = 100) -> float:
             window = words[i:i + window_size]
             lcc_values.append(NaiveGraph.get_LCC(window))
         return np.mean(lcc_values)
+
+#TF-IDF weighted sentence vectors
+def vectorize_sent(text, oov=oov, stopwords=fillers):
+    doc = nlp(text)
+    tokens = [token for token in doc if ((token.text and token.lemma_ and token.lemma_ != ' '
+                                          and token.text not in stopwords
+                                          and not token.is_oov
+                                          and token.pos_ not in ['PUNCT', 'NUM']))]
+    return [token.text for token in tokens], [token.vector for token in tokens]
+
+def idf_sent_vectors(words: List[str], vectors: List[np.array], lang='de') -> np.array:
+    assert len(words) > 0
+    assert len(words) == len(vectors)
+    weights = [word_frequency(w, lang=lang) for w in words]
+    if sum(weights) == 0:  
+        return np.average(vectors, axis=0)
+    return np.average(vectors, axis=0, weights=weights)
+
+def vectorize_sents(sents, stopwords=fillers, use_tf_idf=True, lang='de'):
+    sentence_vectors = []
+    for s in sents:
+        sent_tokens, sent_vectors = vectorize_sent(s, stopwords=stopwords)
+        if not sent_tokens:
+            continue
+        if use_tf_idf:
+          sent_vector = idf_sent_vectors(sent_tokens, sent_vectors, lang=lang)
+        else:
+          sent_vector = np.mean(sent_vectors, axis=0)
+        sentence_vectors.append(sent_vector)
+    return sentence_vectors
 
 #local coherence
 def cos_sim(v1, v2):
